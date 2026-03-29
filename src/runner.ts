@@ -7,7 +7,7 @@ import { computeHash, stripPacket } from "./hasher.js";
 import { writePacket, writeHash } from "./store.js";
 import { getAllUpstream } from "./graph.js";
 
-function invokeAgent(cmd: string, input: string): Promise<{ stdout: string; code: number }> {
+function invokeAgent(cmd: string, input: string): Promise<{ stdout: string; stderr: string; code: number }> {
   return new Promise((resolve) => {
     const parts = cmd.match(/(?:[^\s"]+|"[^"]*")+/g) ?? [cmd];
     const bin = parts[0]!;
@@ -20,7 +20,11 @@ function invokeAgent(cmd: string, input: string): Promise<{ stdout: string; code
     child.stdout.on("data", (d: Buffer) => chunks.push(d));
     child.stderr.on("data", (d: Buffer) => errChunks.push(d));
     child.on("close", (code) => {
-      resolve({ stdout: Buffer.concat(chunks).toString("utf8"), code: code ?? 1 });
+      resolve({
+        stdout: Buffer.concat(chunks).toString("utf8"),
+        stderr: Buffer.concat(errChunks).toString("utf8"),
+        code: code ?? 1,
+      });
     });
 
     child.stdin.write(input);
@@ -69,8 +73,12 @@ export async function runPipeline(graph: Graph, opts: RunOptions): Promise<Packe
             : ctx.prompt;
         }
 
-        const { stdout, code } = await invokeAgent(opts.agent, agentInput);
+        const { stdout, stderr, code } = await invokeAgent(opts.agent, agentInput);
         const status = code === 0 ? "PASS" as const : "FAIL" as const;
+
+        if (status === "FAIL" && stderr) {
+          process.stderr.write(`  stderr: ${stderr.trim().split("\n")[0]}\n`);
+        }
 
         // Compute input hash
         const allDeps = getAllUpstream(graph, nodeName);

@@ -94,7 +94,8 @@ async function main(): Promise<void> {
       const agent = flag("agent");
       if (!agent) die("Usage: context-packet run --agent \"claude -p\" [--input \"...\"]");
       const input = flag("input");
-      const packets = await run({ agent, input: input ?? "" });
+      const dir = flag("dir");
+      const packets = await run({ agent, input: input ?? "", dir: dir ?? undefined });
       const last = packets[packets.length - 1];
       if (last) {
         process.stderr.write("\n");

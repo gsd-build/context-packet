@@ -123,9 +123,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
 
   try {
+    const a = (args ?? {}) as Record<string, unknown>;
+
+    function requireString(key: string): string {
+      const val = a[key];
+      if (typeof val !== "string") throw new Error(`"${key}" must be a string`);
+      return val;
+    }
+
     switch (name) {
       case "context_packet_init": {
-        const graph = init({ graph: (args as Record<string, unknown>).graph_path as string });
+        const graph = init({ graph: requireString("graph_path") });
         return {
           content: [{
             type: "text" as const,
@@ -135,9 +143,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "context_packet_resolve": {
-        const a = args as Record<string, unknown>;
-        const ctx = resolve(a.node as string, {
-          maxTokens: a.max_tokens as number | undefined,
+        const ctx = resolve(requireString("node"), {
+          maxTokens: typeof a.max_tokens === "number" ? a.max_tokens : undefined,
         });
         return {
           content: [{
@@ -154,12 +161,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "context_packet_submit": {
-        const a = args as Record<string, unknown>;
-        const packet = submit(a.node as string, {
-          status: a.status as "PASS" | "FAIL" | "PARTIAL",
-          summary: a.summary as string,
-          body: (a.body as string) ?? "",
-          data: a.data as Record<string, unknown> | undefined,
+        const statusVal = requireString("status");
+        if (!["PASS", "FAIL", "PARTIAL"].includes(statusVal)) {
+          throw new Error(`"status" must be PASS, FAIL, or PARTIAL`);
+        }
+        const packet = submit(requireString("node"), {
+          status: statusVal as "PASS" | "FAIL" | "PARTIAL",
+          summary: requireString("summary"),
+          body: typeof a.body === "string" ? a.body : "",
+          data: typeof a.data === "object" && a.data !== null ? a.data as Record<string, unknown> : undefined,
         });
         return {
           content: [{
@@ -170,13 +180,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "context_packet_read": {
-        const a = args as Record<string, unknown>;
-        const packet = read(a.node as string);
+        const packet = read(requireString("node"));
         if (!packet) {
           return {
             content: [{
               type: "text" as const,
-              text: `No packet for "${a.node}" — node hasn't submitted yet.`,
+              text: `No packet for "${a.node as string}" — node hasn't submitted yet.`,
             }],
           };
         }

@@ -101,7 +101,6 @@ export function getUpstream(graph: Graph, nodeName: string): string[] {
 export function topoSort(graph: Graph): string[][] {
   const inDegree = new Map<string, number>();
   const adj = new Map<string, string[]>();
-  const nodeMap = new Map(graph.nodes.map((n) => [n.name, n]));
 
   for (const node of graph.nodes) {
     inDegree.set(node.name, 0);
@@ -109,7 +108,7 @@ export function topoSort(graph: Graph): string[][] {
   }
 
   for (const node of graph.nodes) {
-    for (const dep of node.depends_on ?? []) {
+    for (const dep of [...(node.depends_on ?? []), ...(node.consumes ?? [])]) {
       adj.get(dep)!.push(node.name);
       inDegree.set(node.name, (inDegree.get(node.name) ?? 0) + 1);
     }
