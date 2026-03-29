@@ -40,6 +40,59 @@ const ctx = resolve("draft", { maxTokens: 8000 });
 // ctx.input_hash → SHA-256 for idempotent skip detection
 ```
 
+## System Prompts
+
+Embed agent instructions directly in the graph:
+
+```json
+{
+  "name": "code-review",
+  "system": "You are part of a precise, thorough code review pipeline.",
+  "nodes": [
+    {
+      "name": "security",
+      "depends_on": ["diff-parse"],
+      "system": "You are a security reviewer. Only report security issues with severity and fix.",
+      "config": { "maxTokens": 4000 }
+    }
+  ]
+}
+```
+
+- `system` on the graph applies to all nodes (preamble)
+- `system` on a node specializes (appended to graph system)
+- `config.maxTokens` sets the default token budget for that node's upstream resolution
+
+## Run a Pipeline
+
+Execute an entire DAG with one command:
+
+```sh
+context-packet run --agent "claude -p" --input "Review this code for security issues"
+```
+
+Walks the DAG in topological order. Nodes at the same level run in parallel. Each node gets its system prompt + upstream context piped to the agent via stdin. Output is captured and submitted automatically.
+
+Works with any agent that reads stdin: `claude -p`, `openai`, `cat`, a custom script.
+
+## MCP Server
+
+For full AI agent sessions (not just stateless `claude -p` calls), context-packet ships as an MCP server. Register it and the agent gets tools to resolve context, do real work, and submit results — all within a single session with full tool access.
+
+```sh
+# Register with Claude Code
+claude mcp add --transport stdio context-packet -- node /path/to/dist/mcp-server.js
+```
+
+Tools exposed:
+- `context_packet_init` — initialize pipeline from graph.json
+- `context_packet_resolve` — get system prompt + upstream context for a node
+- `context_packet_submit` — submit a node's completed output
+- `context_packet_read` — read a single node's packet
+- `context_packet_status` — show all node completion states
+
+The agent calls resolve, does its work (reads files, writes code, runs tests), then calls submit. Full capabilities between resolve and submit — not a pipe.
+
 ## CLI
 
 Works with any agent that can shell out. Claude, GPT, Gemini, local models, bash scripts — anything.
@@ -104,7 +157,7 @@ Create `.context-packet/` with a graph. Accepts a `Graph` object or a path to a 
 
 ### `resolve(node, opts?)`
 
-Walk the DAG upstream, collect completed packets, apply token budget. Returns `ResolvedContext` with packets, prompt (anti-injection wrapped), missing nodes, and semantic hash.
+Walk the DAG upstream, collect completed packets, apply token budget. Returns `ResolvedContext` with packets, system prompt, prompt (anti-injection wrapped), missing nodes, and semantic hash.
 
 ### `submit(node, input)`
 
@@ -117,6 +170,10 @@ Read a single packet. Returns `null` if not yet submitted.
 ### `status()`
 
 Get completion status of all nodes.
+
+### `run(opts)`
+
+Execute the entire pipeline. Requires `agent` (command string) and optional `input`. Walks the DAG, runs nodes in parallel where possible, pipes system prompt + context to the agent via stdin.
 
 ## Anti-Injection
 

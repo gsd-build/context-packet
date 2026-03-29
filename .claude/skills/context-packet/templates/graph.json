@@ -1,13 +1,16 @@
 {
   "name": "PIPELINE_NAME",
+  "system": "GLOBAL_SYSTEM_PROMPT — applies to all nodes.",
   "nodes": [
-    { "name": "FIRST_NODE" },
-    { "name": "PARALLEL_A", "depends_on": ["FIRST_NODE"] },
-    { "name": "PARALLEL_B", "depends_on": ["FIRST_NODE"] },
+    { "name": "FIRST_NODE", "system": "NODE_SPECIFIC_PROMPT" },
+    { "name": "PARALLEL_A", "depends_on": ["FIRST_NODE"], "system": "SPECIALIST_A_PROMPT" },
+    { "name": "PARALLEL_B", "depends_on": ["FIRST_NODE"], "system": "SPECIALIST_B_PROMPT" },
     {
       "name": "MERGE_NODE",
       "depends_on": ["PARALLEL_A", "PARALLEL_B"],
-      "consumes": ["FIRST_NODE"]
+      "consumes": ["FIRST_NODE"],
+      "system": "MERGE_PROMPT",
+      "config": { "maxTokens": 6000 }
     }
   ]
 }

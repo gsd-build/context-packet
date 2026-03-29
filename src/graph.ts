@@ -94,6 +94,46 @@ export function getUpstream(graph: Graph, nodeName: string): string[] {
   return [...new Set([...(node.depends_on ?? []), ...(node.consumes ?? [])])];
 }
 
+/**
+ * Topological sort grouped by level for parallel execution.
+ * Returns arrays of node names — each inner array can run concurrently.
+ */
+export function topoSort(graph: Graph): string[][] {
+  const inDegree = new Map<string, number>();
+  const adj = new Map<string, string[]>();
+  const nodeMap = new Map(graph.nodes.map((n) => [n.name, n]));
+
+  for (const node of graph.nodes) {
+    inDegree.set(node.name, 0);
+    adj.set(node.name, []);
+  }
+
+  for (const node of graph.nodes) {
+    for (const dep of node.depends_on ?? []) {
+      adj.get(dep)!.push(node.name);
+      inDegree.set(node.name, (inDegree.get(node.name) ?? 0) + 1);
+    }
+  }
+
+  const levels: string[][] = [];
+  let queue = graph.nodes.filter((n) => inDegree.get(n.name) === 0).map((n) => n.name);
+
+  while (queue.length > 0) {
+    levels.push(queue);
+    const next: string[] = [];
+    for (const name of queue) {
+      for (const child of adj.get(name) ?? []) {
+        const deg = (inDegree.get(child) ?? 1) - 1;
+        inDegree.set(child, deg);
+        if (deg === 0) next.push(child);
+      }
+    }
+    queue = next;
+  }
+
+  return levels;
+}
+
 /** Get all transitive upstream nodes via depends_on + consumes. */
 export function getAllUpstream(graph: Graph, nodeName: string): string[] {
   const visited = new Set<string>();

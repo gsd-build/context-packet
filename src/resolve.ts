@@ -19,7 +19,14 @@ export function resolveContext(
   opts?: ResolveOptions,
 ): ResolvedContext {
   const root = rootDir(opts?.dir);
-  const maxTokens = opts?.maxTokens;
+  const nodeDef = graph.nodes.find((n) => n.name === node);
+  const maxTokens = opts?.maxTokens ?? nodeDef?.config?.maxTokens;
+
+  // Assemble system prompt: graph.system + node.system
+  const systemParts: string[] = [];
+  if (graph.system) systemParts.push(graph.system);
+  if (nodeDef?.system) systemParts.push(nodeDef.system);
+  const system = systemParts.join("\n\n");
 
   // Get all transitive upstream nodes
   const allUpstream = getAllUpstream(graph, node);
@@ -58,7 +65,7 @@ export function resolveContext(
   if (!maxTokens) {
     // No budget — include everything
     const prompt = buildPrompt(packets);
-    return { packets, missing, prompt, truncated, input_hash };
+    return { packets, missing, prompt, system, truncated, input_hash };
   }
 
   // Token-budgeted assembly
@@ -78,7 +85,7 @@ export function resolveContext(
     // Can't even fit summaries — truncate summaries
     truncated = true;
     const prompt = buildPrompt(packets, 0);
-    return { packets, missing, prompt, truncated, input_hash };
+    return { packets, missing, prompt, system, truncated, input_hash };
   }
 
   // Phase 2: allocate body budget, priority to direct deps
@@ -96,7 +103,7 @@ export function resolveContext(
   if (totalBodyTokens <= bodyBudget) {
     // Everything fits
     const prompt = buildPrompt(packets);
-    return { packets, missing, prompt, truncated, input_hash };
+    return { packets, missing, prompt, system, truncated, input_hash };
   }
 
   // Truncate from the end (least priority = most distant)
@@ -130,7 +137,7 @@ export function resolveContext(
   }
 
   const prompt = buildPrompt(promptPackets);
-  return { packets, missing, prompt, truncated, input_hash };
+  return { packets, missing, prompt, system, truncated, input_hash };
 }
 
 function buildPrompt(packets: Record<string, Packet>, maxBodyChars?: number): string {

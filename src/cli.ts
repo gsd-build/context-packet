@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { init, resolve, submit, read, status } from "./index.js";
+import { init, resolve, submit, read, status, run } from "./index.js";
 
 const args = process.argv.slice(2);
 const cmd = args[0];
@@ -20,7 +20,7 @@ function out(data: unknown): void {
   process.stdout.write(JSON.stringify(data, null, 2) + "\n");
 }
 
-try {
+async function main(): Promise<void> {
   switch (cmd) {
     case "init": {
       const graphPath = flag("graph");
@@ -90,6 +90,19 @@ try {
       break;
     }
 
+    case "run": {
+      const agent = flag("agent");
+      if (!agent) die("Usage: context-packet run --agent \"claude -p\" [--input \"...\"]");
+      const input = flag("input");
+      const packets = await run({ agent, input: input ?? "" });
+      const last = packets[packets.length - 1];
+      if (last) {
+        process.stderr.write("\n");
+        process.stdout.write(last.body + "\n");
+      }
+      break;
+    }
+
     default:
       process.stderr.write(
         "context-packet — file-based context resolution for AI agent DAGs\n\n" +
@@ -99,10 +112,13 @@ try {
           "  submit <node> --status --summary Submit a completed packet\n" +
           "  read <node>                      Read a node's packet\n" +
           "  status                           Show all node statuses\n" +
-          "  hash <node>                      Show semantic input hash\n",
+          "  hash <node>                      Show semantic input hash\n" +
+          "  run --agent \"cmd\" [--input \"...\"] Run entire pipeline\n",
       );
       process.exit(cmd ? 1 : 0);
   }
-} catch (e: unknown) {
-  die(e instanceof Error ? e.message : String(e));
 }
+
+main().catch((e: unknown) => {
+  die(e instanceof Error ? e.message : String(e));
+});

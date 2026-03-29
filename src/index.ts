@@ -6,7 +6,7 @@ import type {
   ResolveOptions,
   SubmitInput,
 } from "./types.js";
-import { loadGraph, validateGraph, getUpstream, getAllUpstream } from "./graph.js";
+import { loadGraph, validateGraph, getUpstream, getAllUpstream, topoSort } from "./graph.js";
 import {
   rootDir,
   ensureDir,
@@ -20,10 +20,12 @@ import {
 } from "./store.js";
 import { resolveContext } from "./resolve.js";
 import { computeHash, stripPacket } from "./hasher.js";
+import { runPipeline, type RunOptions } from "./runner.js";
 
 export type {
   Graph,
   NodeDef,
+  NodeConfig,
   Packet,
   PacketStatus,
   NodeStatus,
@@ -32,7 +34,9 @@ export type {
   SubmitInput,
 } from "./types.js";
 
+export type { RunOptions } from "./runner.js";
 export { GraphError } from "./graph.js";
+export { topoSort } from "./graph.js";
 
 interface InitOptions {
   dir?: string;
@@ -117,6 +121,13 @@ export function submit(
 /** Read a single node's packet. */
 export function read(node: string, opts?: { dir?: string }): Packet | null {
   return readPacket(rootDir(opts?.dir), node);
+}
+
+/** Run the entire pipeline with an agent command. */
+export async function run(opts: RunOptions): Promise<Packet[]> {
+  const root = rootDir(opts.dir);
+  const graph = readGraph(root);
+  return runPipeline(graph, opts);
 }
 
 /** Get status of all nodes in the graph. */

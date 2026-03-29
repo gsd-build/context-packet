@@ -7,6 +7,7 @@ Initialize `.context-packet/` directory. With `--graph`: loads and validates the
 
 **`context-packet resolve <node> [--max-tokens N]`**
 Resolve upstream context for a node. Walks `depends_on` + `consumes` transitively. Returns JSON with:
+- `system` — assembled system prompt (graph.system + node.system)
 - `packets` — all upstream packets keyed by node name
 - `missing` — upstream nodes with no packet yet
 - `prompt` — formatted string with anti-injection delimiters (pipe to `jq -r '.prompt'` for agent input)
@@ -47,5 +48,12 @@ Check for missing upstream before proceeding:
 MISSING=$(context-packet resolve <node> 2>/dev/null | jq -r '.missing | length')
 if [ "$MISSING" -gt 0 ]; then echo "Upstream incomplete"; exit 1; fi
 ```
+
+**`context-packet run --agent "cmd" [--input "..."]`**
+Execute the entire pipeline. Walks DAG in topological order. Nodes at the same level run in parallel. For each node: pipes `system prompt + upstream context` to the agent via stdin, captures stdout as the packet body, auto-generates summary from first line.
+- `--agent` (required) — command that reads stdin, writes stdout
+- `--input` (optional) — initial input for root nodes
+- Prints final node's output to stdout
+- Stops on first node failure
 
 </cli_reference>

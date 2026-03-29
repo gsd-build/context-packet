@@ -11,15 +11,23 @@ export interface Packet {
   timestamp: string;
 }
 
+export interface NodeConfig {
+  maxTokens?: number;
+}
+
 export interface NodeDef {
   name: string;
   depends_on?: string[];
   consumes?: string[];
+  system?: string;
+  config?: NodeConfig;
   meta?: Record<string, unknown>;
 }
 
 export interface Graph {
   name: string;
+  system?: string;
+  input?: string;
   nodes: NodeDef[];
 }
 
@@ -32,6 +40,7 @@ export interface ResolvedContext {
   packets: Record<string, Packet>;
   missing: string[];
   prompt: string;
+  system: string;
   truncated: boolean;
   input_hash: string;
 }

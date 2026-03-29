@@ -1,7 +1,7 @@
 <api_reference>
 
 ```typescript
-import { init, resolve, submit, read, status } from "context-packet";
+import { init, resolve, submit, read, status, run, topoSort } from "context-packet";
 ```
 
 **`init(opts?): Graph`**
@@ -18,7 +18,7 @@ resolve("draft")                           // all upstream context
 resolve("draft", { maxTokens: 8000 })      // token-budgeted
 resolve("draft", { dir: "/custom/path" })  // custom location
 ```
-Returns: `{ packets, missing, prompt, truncated, input_hash }`
+Returns: `{ packets, missing, prompt, system, truncated, input_hash }`
 
 **`submit(node, input, opts?): Packet`**
 ```typescript
@@ -41,6 +41,13 @@ Returns the packet or null if not yet submitted.
 // status is "pending" | "complete" | "failed" | "partial"
 ```
 
+**`run(opts): Promise<Packet[]>`**
+```typescript
+await run({ agent: "claude -p", input: "Review this code" })
+await run({ agent: "cat", input: "test" })  // for testing
+```
+Walks DAG in topological order. Parallel nodes run concurrently. Pipes system + context via stdin. Returns all packets.
+
 **Types:**
 ```typescript
 interface Packet {
@@ -58,11 +65,13 @@ interface NodeDef {
   name: string;
   depends_on?: string[];
   consumes?: string[];
+  system?: string;
+  config?: { maxTokens?: number };
   meta?: Record<string, unknown>;
 }
 
-interface Graph { name: string; nodes: NodeDef[]; }
-interface ResolvedContext { packets: Record<string, Packet>; missing: string[]; prompt: string; truncated: boolean; input_hash: string; }
+interface Graph { name: string; system?: string; input?: string; nodes: NodeDef[]; }
+interface ResolvedContext { packets: Record<string, Packet>; missing: string[]; prompt: string; system: string; truncated: boolean; input_hash: string; }
 ```
 
 </api_reference>
