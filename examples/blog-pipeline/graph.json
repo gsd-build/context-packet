@@ -1,0 +1,9 @@
+{
+  "name": "blog-pipeline",
+  "nodes": [
+    { "name": "research" },
+    { "name": "outline", "depends_on": ["research"] },
+    { "name": "draft", "depends_on": ["outline"], "consumes": ["research"] },
+    { "name": "review", "depends_on": ["draft"] }
+  ]
+}

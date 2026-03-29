@@ -1,0 +1,18 @@
+{
+  "name": "doc-gen",
+  "nodes": [
+    { "name": "analyze" },
+    { "name": "extract-api", "depends_on": ["analyze"] },
+    { "name": "extract-arch", "depends_on": ["analyze"] },
+    {
+      "name": "write-docs",
+      "depends_on": ["extract-api", "extract-arch"],
+      "consumes": ["analyze"]
+    },
+    {
+      "name": "review",
+      "depends_on": ["write-docs"],
+      "consumes": ["analyze"]
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "name": "context-packet",
+  "version": "0.1.0",
+  "description": "File-based context resolution for AI agent DAG workflows",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "context-packet": "dist/bin/context-packet.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "node --test dist/test/*.test.js",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "context",
+    "dag",
+    "ai",
+    "agent",
+    "workflow",
+    "pipeline",
+    "llm"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "typescript": "^5.5.0"
+  }
+}

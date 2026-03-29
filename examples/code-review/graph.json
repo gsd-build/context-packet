@@ -1,0 +1,14 @@
+{
+  "name": "code-review",
+  "nodes": [
+    { "name": "diff-parse" },
+    { "name": "security", "depends_on": ["diff-parse"] },
+    { "name": "performance", "depends_on": ["diff-parse"] },
+    { "name": "correctness", "depends_on": ["diff-parse"] },
+    {
+      "name": "synthesize",
+      "depends_on": ["security", "performance", "correctness"],
+      "consumes": ["diff-parse"]
+    }
+  ]
+}

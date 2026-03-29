@@ -1,0 +1,13 @@
+{
+  "name": "PIPELINE_NAME",
+  "nodes": [
+    { "name": "FIRST_NODE" },
+    { "name": "PARALLEL_A", "depends_on": ["FIRST_NODE"] },
+    { "name": "PARALLEL_B", "depends_on": ["FIRST_NODE"] },
+    {
+      "name": "MERGE_NODE",
+      "depends_on": ["PARALLEL_A", "PARALLEL_B"],
+      "consumes": ["FIRST_NODE"]
+    }
+  ]
+}

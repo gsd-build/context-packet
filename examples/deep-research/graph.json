@@ -1,0 +1,14 @@
+{
+  "name": "deep-research",
+  "nodes": [
+    { "name": "frame-topic" },
+    { "name": "angle-technical", "depends_on": ["frame-topic"] },
+    { "name": "angle-historical", "depends_on": ["frame-topic"] },
+    { "name": "angle-contrarian", "depends_on": ["frame-topic"] },
+    {
+      "name": "synthesize",
+      "depends_on": ["angle-technical", "angle-historical", "angle-contrarian"],
+      "consumes": ["frame-topic"]
+    }
+  ]
+}
